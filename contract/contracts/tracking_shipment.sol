@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.4;
 
 contract Tracking_Shipment{
     enum ShipmentStatus{PENDING, IN_TRANSIT, DELIVERED}
@@ -11,7 +11,7 @@ contract Tracking_Shipment{
         uint256 distance;
         uint256 price;
         ShipmentStatus status;
-        bool paid;
+        bool isPaid;
     }
     mapping(address => Shipment[]) public shipments;
     uint256 public shipmentCounts;
@@ -73,7 +73,7 @@ contract Tracking_Shipment{
        TypeShipment storage typeShipment= typeShipments[_index];
       
        require(shipment.receiver == _receiver, "Invalid address");
-       require(shipment.status == ShipmentStatus.PENDING, "Shipment already in transit");
+       require(shipment.status == ShipmentStatus.PENDING, "Shipment allready in transit");
        shipment.status = ShipmentStatus.DELIVERED; 
        typeShipment.status = ShipmentStatus.DELIVERED;
        typeShipment.deliveryTime= block.timestamp;
@@ -82,7 +82,7 @@ contract Tracking_Shipment{
        uint256 amount = shipment.price;
        payable(shipment.sender).transfer(amount);  
        
-       shipment.paid=true;
+       shipment.isPaid=true;
        typeShipment.paid=true;
 
        emit ShipmentInDelivered(_sender, _receiver, shipment.deliveryTime);
@@ -96,7 +96,7 @@ contract Tracking_Shipment{
   ){
    Shipment memory shipment = shipments[_sender][_index];
    return (shipment.sender, shipment.receiver, shipment.pickupTime, shipment.deliveryTime, shipment.distance,
-   shipment.price,shipment.status, shipment.paid);
+   shipment.price,shipment.status, shipment.isPaid);
   }
 
   function getShipmentCount(address _sender) public view returns(uint256){
@@ -105,7 +105,6 @@ contract Tracking_Shipment{
 
   function getAllTransaction() public view returns(TypeShipment[] memory){
     return typeShipments;
-
   }
 
 }
