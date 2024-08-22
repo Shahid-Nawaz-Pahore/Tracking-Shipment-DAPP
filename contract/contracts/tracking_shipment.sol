@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.4;
+pragma solidity ^0.8.4;
 
 contract Tracking_Shipment{
     enum ShipmentStatus{PENDING, IN_TRANSIT, DELIVERED}
