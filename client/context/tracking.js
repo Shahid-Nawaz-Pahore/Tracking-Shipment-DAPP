@@ -132,6 +132,33 @@ export const TrackingProvider = ({ children }) => {
         status: shipment[6],
         isPaid: shipment[7],
       };
-    } catch (error) {}
+    } catch (error) {
+      console.log("Soory no Shipment");
+    }
+  };
+  const startShipment = async (getProduct) => {
+    const { receiver, index } = getProduct;
+    try {
+      if (!window.ethereum) return "Please Install metaMask";
+      const accounts = await window.ethereum.request({
+        method: "eth_accounts",
+      });
+
+      const web3Modal = new Web3Modal();
+      const connection = await web3Modal.connect();
+      const provider = new ethers.utils.Web3Provider(connection);
+      const signer = provider.getSigner();
+      const contract = fetchContract(signer);
+      const shipment = await contract.startShipment(
+        accounts[0],
+        receiver,
+        index + 1
+      );
+
+      shipment.wait();
+      console.log(shipment);
+    } catch (error) {
+      console.log("sorry no Shi shipment", error);
+    }
   };
 };
