@@ -161,4 +161,21 @@ export const TrackingProvider = ({ children }) => {
       console.log("sorry no Shi shipment", error);
     }
   };
+
+  //====check wallet connected
+  const checkIfWalletConnected = async () => {
+    try {
+      if (!window.ethereum) return "Install MetaMask";
+      const accounts = await window.ethereum.request({
+        method: "eth_accounts",
+      });
+      if (accounts.length) {
+        setCurrentUser(accounts[0]);
+      } else {
+        return "No account";
+      }
+    } catch (error) {
+      console.log("Not account");
+    }
+  };
 };
