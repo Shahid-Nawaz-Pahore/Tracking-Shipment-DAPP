@@ -1,28 +1,25 @@
-import React, { Children, useEffect, useState } from "react";
-import Web3Modal from "web3model";
+import React, { useEffect, useState } from "react";
+import Web3Modal from "web3modal";
 import { ethers } from "ethers";
 
 // internal import
 import contractABI from "./contractABI";
-import contractABI from "./contractABI";
 
 // declare contract address
 const contractAddress = "0x26aA656d8a09A38746337497ED9004d31985e1e2";
-// declare contract ABI
-const contractABI = contractABI;
 
-//............Fatch smart contract
-// make arrow function with name fetchContract in this function call the ethers fuction contract provide the contract address,ABI and signerOrProvider retuurn contract instant
+// Fetch the smart contract
 const fetchContract = (signerOrProvider) => {
   return new ethers.Contract(contractAddress, contractABI, signerOrProvider);
 };
 
 export const TrackingContext = React.createContext();
-// use context management for managing the entire state
+
 export const TrackingProvider = ({ children }) => {
-  //state variable
+  // State variables
   const DappName = "Product Tracking Dapp";
   const [currentUser, setCurrentUser] = useState("");
+
   const createShipment = async (items) => {
     console.log(items);
     const { receiver, pickupTime, distance, price } = items;
@@ -44,7 +41,7 @@ export const TrackingProvider = ({ children }) => {
       await createItem.wait();
       console.log(createItem);
     } catch (error) {
-      console.log("went wrong something", error);
+      console.log("Something went wrong", error);
     }
   };
 
@@ -52,18 +49,19 @@ export const TrackingProvider = ({ children }) => {
     try {
       const provider = new ethers.providers.JsonRpcProvider();
       const contract = fetchContract(provider);
-      const shipments = await contract.getAllTransactions();
+      const shipments = await contract.getAllTransaction();
       const getAllShipments = shipments.map((shipment) => ({
         sender: shipment.sender,
         receiver: shipment.receiver,
         price: ethers.utils.formatEther(shipment.price.toString()),
         pickupTime: shipment.pickupTime.toNumber(),
         deliveryTime: shipment.deliveryTime.toNumber(),
-        isPaid: isPaid,
+        isPaid: shipment.paid,
         status: shipment.status,
       }));
+      console.log(getAllShipments);
     } catch (error) {
-      console.log("error weant, getting wrong");
+      console.log("Error while fetching shipments", error);
     }
   };
 
@@ -71,14 +69,14 @@ export const TrackingProvider = ({ children }) => {
     try {
       if (!window.ethereum) return "Install MetaMask";
       const accounts = await window.ethereum.request({
-        method: "eth_account",
+        method: "eth_accounts",
       });
       const provider = new ethers.providers.JsonRpcProvider();
       const contract = fetchContract(provider);
-      const shipmentsCount = await contract.getShipmentCount(accounts);
+      const shipmentsCount = await contract.getShipmentCount(accounts[0]);
       return shipmentsCount.toNumber();
     } catch (error) {
-      console.log("error want getting shipment");
+      console.log("Error while fetching shipment count", error);
     }
   };
 
@@ -88,11 +86,11 @@ export const TrackingProvider = ({ children }) => {
     try {
       if (!window.ethereum) return "Install MetaMask";
       const accounts = await window.ethereum.request({
-        method: "eth_account",
+        method: "eth_accounts",
       });
-      const web3Model = new Web3Modal();
-      const connection = await web3Model.connect();
-      const provider = new ethers.providers(connection);
+      const web3Modal = new Web3Modal();
+      const connection = await web3Modal.connect();
+      const provider = new ethers.providers.Web3Provider(connection);
       const signer = provider.getSigner();
       const contract = fetchContract(signer);
 
@@ -104,10 +102,10 @@ export const TrackingProvider = ({ children }) => {
           gasLimit: 300000,
         }
       );
-      transaction.wait();
+      await transaction.wait();
       console.log(transaction);
     } catch (error) {
-      console.log("wrong complete shipment", error);
+      console.log("Error while completing shipment", error);
     }
   };
 
@@ -120,33 +118,35 @@ export const TrackingProvider = ({ children }) => {
       });
       const provider = new ethers.providers.JsonRpcProvider();
       const contract = fetchContract(provider);
-      const shipment = await contract.getShipment(accounts, index + 1);
+      const shipment = await contract.getShipment(accounts[0], index + 1);
 
       const SingleShipment = {
-        sender: shipment[0],
-        receiver: shipment[1],
-        pickupTime: shipment[2].toNumber(),
-        deliveryTime: shipment[3].toNumber(),
-        distance: shipment[4].toNumber(),
-        price: ethers.utils.formatEther(shipment[5].toString()),
-        status: shipment[6],
-        isPaid: shipment[7],
+        sender: shipment.sender,
+        receiver: shipment.receiver,
+        pickupTime: shipment.pickupTime.toNumber(),
+        deliveryTime: shipment.deliveryTime.toNumber(),
+        distance: shipment.distance.toNumber(),
+        price: ethers.utils.formatEther(shipment.price.toString()),
+        status: shipment.status,
+        isPaid: shipment.isPaid,
       };
+      console.log(SingleShipment);
     } catch (error) {
-      console.log("Soory no Shipment");
+      console.log("No Shipment found", error);
     }
   };
+
   const startShipment = async (getProduct) => {
     const { receiver, index } = getProduct;
     try {
-      if (!window.ethereum) return "Please Install metaMask";
+      if (!window.ethereum) return "Please Install MetaMask";
       const accounts = await window.ethereum.request({
         method: "eth_accounts",
       });
 
       const web3Modal = new Web3Modal();
       const connection = await web3Modal.connect();
-      const provider = new ethers.utils.Web3Provider(connection);
+      const provider = new ethers.providers.Web3Provider(connection);
       const signer = provider.getSigner();
       const contract = fetchContract(signer);
       const shipment = await contract.startShipment(
@@ -155,14 +155,14 @@ export const TrackingProvider = ({ children }) => {
         index + 1
       );
 
-      shipment.wait();
+      await shipment.wait();
       console.log(shipment);
     } catch (error) {
-      console.log("sorry no Shi shipment", error);
+      console.log("Error while starting shipment", error);
     }
   };
 
-  //====check wallet connected
+  // Check if wallet is connected
   const checkIfWalletConnected = async () => {
     try {
       if (!window.ethereum) return "Install MetaMask";
@@ -172,10 +172,45 @@ export const TrackingProvider = ({ children }) => {
       if (accounts.length) {
         setCurrentUser(accounts[0]);
       } else {
-        return "No account";
+        return "No account found";
       }
     } catch (error) {
-      console.log("Not account");
+      console.log("No account found", error);
     }
   };
+
+  // Connect wallet function
+  const connectWallet = async () => {
+    try {
+      if (!window.ethereum) return "Install MetaMask";
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      setCurrentUser(accounts[0]);
+    } catch (error) {
+      console.log("Something went wrong while connecting wallet", error);
+    }
+  };
+
+  useEffect(() => {
+    checkIfWalletConnected();
+  }, []);
+
+  return (
+    <TrackingContext.Provider
+      value={{
+        connectWallet,
+        createShipment,
+        getAllShipment,
+        completeShipment,
+        getShipment,
+        startShipment,
+        getShipmentCount,
+        DappName,
+        currentUser,
+      }}
+    >
+      {children}
+    </TrackingContext.Provider>
+  );
 };
